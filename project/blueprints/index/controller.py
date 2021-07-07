@@ -85,10 +85,10 @@ def handle_process_event(datas):
     ## setup timeout when sleep function triggered
     datas['fu_3'] = datas['fu_3'].str.replace('TIMEOUT_SLEEP', TIMEOUT_SLEEP.__str__())
 
-    NORMAL_RESPONSE = httpx.get(URL.replace('{PAYLOAD}', '999'), cookies=COOKIES).text
+    NORMAL_RESPONSE = httpx.get(URL.replace('FUZZ', '999'), cookies=COOKIES).text
 
     timeout = time.perf_counter()
-    httpx.get(URL.replace('{PAYLOAD}', '1'), cookies=COOKIES)
+    httpx.get(URL.replace('FUZZ', '1'), cookies=COOKIES)
     NORMAL_TIMEOUT = time.perf_counter() - timeout
 
     ## intial generation
@@ -101,7 +101,7 @@ def handle_process_event(datas):
         emit('logger', f'Generation: {len(GENERATION)} --> Start')
         for i in range(len(chrome)):
             start_time = time.perf_counter()
-            response_text = httpx.get(URL.replace('{PAYLOAD}', ' '.join(chrome.iloc[i].tolist())), cookies=COOKIES, timeout=8).text
+            response_text = httpx.get(URL.replace('FUZZ', ' '.join(chrome.iloc[i].tolist())), cookies=COOKIES, timeout=8).text
             end_time = time.perf_counter() - start_time
 
             emit('logger', f'Generation: {len(GENERATION)} - Chromosome: {i} --> KRE')
