@@ -33,6 +33,8 @@ const fuzzerOutput = (message) => {
 	let fuzzer_output = document.getElementById('fuzzer-output');
 	if (message == 'clear') {
 		fuzzer_output.innerText = '';
+		document.getElementsByClassName('nav-generation')[0].innerHTML = '';
+		document.getElementsByClassName('tab-generation')[0].innerHTML = '';
 	} else {
 		let time = new Date().toLocaleTimeString().split(' ')[0];
 		fuzzer_output.append(`[${time}] ${message}\n`);
@@ -47,8 +49,11 @@ const buttonToggle = () => {
 };
 
 // initial datas
+new ClipboardJS('.btn');
+
 let currentGeneration,
 	currentState = [-1, '???'];
+new ClipboardJS('.btn');
 
 let totalStart = 0;
 
@@ -69,6 +74,29 @@ document.addEventListener(
 			buttonToggle();
 
 			let url = document.getElementsByClassName('url')[0].value;
+			let cookies = document.getElementsByClassName('cookies')[0].value;
+
+			let general = {
+				max_population: Number(
+					document.getElementById('general_max_population').value
+				),
+				max_fetch_chromosome: Number(
+					document.getElementById('general_max_chromosome').value
+				),
+				max_generation: Number(
+					document.getElementById('general_max_generation').value
+				),
+				max_score: Number(document.getElementById('general_max_score').value),
+			};
+
+			let advance = {
+				timeout_sleep: Number(
+					document.getElementById('advance_timeout_sleep').value
+				),
+				kre: document.getElementById('advance_kre').value.split('\n'),
+				krq: document.getElementById('advance_krq').value.split('\n'),
+			};
+
 			let approx = {};
 			for (let key of ['alpha', 'beta', 'gamma', 'delta']) {
 				approx[key] = document.getElementById(`approx_${key}`).value;
@@ -87,7 +115,18 @@ document.addEventListener(
 				return buttonToggle();
 			}
 
-			socket.emit('process', { url, approx });
+			socket.emit('process', {
+				target: {
+					url,
+					cookies,
+				},
+				config: {
+					general,
+					approx,
+					advance,
+				},
+			});
+
 			socket.on('logger', (messages) => {
 				fuzzerOutput(messages);
 
@@ -126,7 +165,7 @@ document.addEventListener(
 							<i class="bi-download"></i> Download
 						</button>
 
-						<table class="table table-sm table-striped mt-4">
+						<table class="table table-sm table-striped table-ellipsis mt-4">
 							<thead>
 								<tr>
 									<th scope="col" class="text-center">#</th>
@@ -139,6 +178,7 @@ document.addEventListener(
 									<th scope="col" class="text-center">score_gamma</th>
 									<th scope="col" class="text-center">score_delta</th>
 									<th scope="col" class="text-center">score_total</th>
+									<th scope="col" class="text-center">status</th>
 									<th scope="col" class="text-center">action</th>
 								</tr>
 							</thead>
@@ -148,21 +188,43 @@ document.addEventListener(
 					}
 				}
 			});
+
 			socket.on('result', (messages) => {
 				for (let i = 0; i < messages.length; i++) {
-					let temp = `<tr><th scope="row">${i + 1}</th>`;
+					let raw_tables = `<tr><th scope="row">${i + 1}</th>`;
+					let test_case_result = [];
+					let test_case_index = [0, 1, 2, 3];
+
 					for (data of messages[i]) {
-						temp += `<td class="text-center">${data}</td>`;
+						if (i in test_case_index) {
+							test_case_result.push(data);
+						}
+
+						raw_tables += `<td class="text-center">${data}</td>`;
 					}
 
-					temp += `
+					raw_tables += '<td class="text-center">';
+					if (Number(data) > general.max_score) {
+						raw_tables += '<span class="badge bg-danger">Vulnerable</span>';
+					} else if (Number(data) > general.max_score * (40 / 100)) {
+						raw_tables +=
+							'<span class="badge bg-warning">False Positive</span>';
+					} else {
+						raw_tables += '<span class="badge bg-secondary">N/A</span>';
+					}
+					raw_tables += '</td>';
+
+					raw_tables += `
 					<td class="text-center">
-						<button type="button" class="btn btn-secondary btn-sm">
+						<button type="button" class="btn btn-secondary btn-sm" data-clipboard-text="${encodeURI(
+							test_case_result.join(' ')
+						)}">
 							<i class="bi-clipboard"></i>
 						</button>
 					</td></tr>`;
 
-					document.getElementById(`table-${currentState}`).innerHTML += temp;
+					document.getElementById(`table-${currentState}`).innerHTML +=
+						raw_tables;
 				}
 			});
 			socket.on('finished', () => buttonToggle());
