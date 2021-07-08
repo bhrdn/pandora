@@ -84,7 +84,11 @@ def handle_process_event(datas):
     ## setup timeout when sleep function triggered
     datas['fu_3'] = datas['fu_3'].str.replace('TIMEOUT_SLEEP', TIMEOUT_SLEEP.__str__())
 
-    NORMAL_RESPONSE = httpx.get(URL.replace('FUZZ', '999'), cookies=COOKIES).text
+    try:
+        NORMAL_RESPONSE = httpx.get(URL.replace('FUZZ', '999'), cookies=COOKIES).text
+    except:
+        emit('logger', f'Cant access url target (timeout)')
+        return emit('finished')
 
     timeout = time.perf_counter()
     httpx.get(URL.replace('FUZZ', '1'), cookies=COOKIES)
@@ -176,5 +180,5 @@ def handle_process_event(datas):
         if sum(chrome.score_total) / len(chrome) > MAX_SCORE:
             break
 
-    emit('finished')
+    return emit('finished')
     
