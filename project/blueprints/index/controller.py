@@ -14,36 +14,35 @@ bp_index = Blueprint('app_index', __name__, url_prefix='/')
 
 @bp_index.route("/", methods=['GET'])
 def index():
-    title = 'Pandora Fuzz'
+    title = 'Pandora Fuzzer'
     return render_template('index.html', title=title)
 
 @socketio.on('process')
 def handle_process_event(datas):
-    MAX_POP = 10
-    MAX_FETCH_CHROMOSOME = 5
-    MAX_GENERATION = 3 ## 0 : ulti
-    MAX_SCORE = 0.5
-    TIMEOUT_SLEEP = 5
+    MAX_POP = datas['config']['general']['max_population']
+    MAX_FETCH_CHROMOSOME = datas['config']['general']['max_fetch_chromosome']
+    MAX_GENERATION = datas['config']['general']['max_generation']
+    MAX_SCORE = datas['config']['general']['max_score']
+    TIMEOUT_SLEEP = datas['config']['advance']['timeout_sleep']
 
-    APPROX_ALPHA = datas['approx'][0]
-    APPROX_BETA = datas['approx'][1]
-    APPROX_GAMMA = datas['approx'][2]
-    APPROX_DELTA = datas['approx'][3]
+    APPROX_ALPHA = datas['config']['approx'][0]
+    APPROX_BETA = datas['config']['approx'][1]
+    APPROX_GAMMA = datas['config']['approx'][2]
+    APPROX_DELTA = datas['config']['approx'][3]
 
-    URL = datas['url']
-    COOKIES = {
-        'PHPSESSID' : 'm2antojk6adprf1t8q22g17221',
-        'security' : 'low'
-    }
+    def cookies_parser(raw):
+        return dict(map(lambda x: x.split('='), map(lambda x: x.replace(' ', ''), raw.split(';'))))
 
-    KNOWN_RESPONSE_ERROR = [
-        'error in your SQL syntax'
-    ]
+    URL = datas['target']['url']
+    try:
+        COOKIES = cookies_parser(datas['target']['cookies'])
+    except:
+        COOKIES = {}
 
-    KNOWN_RESPONSE_TEXT = [
-        '-MariaDB'
-        '31333337'
-    ]
+    COOKIES
+
+    KNOWN_RESPONSE_ERROR = datas['config']['advance']['kre']
+    KNOWN_RESPONSE_TEXT = datas['config']['advance']['krq']
 
     def mutation(query, options):
         result = []
