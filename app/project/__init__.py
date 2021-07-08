@@ -1,5 +1,5 @@
 from flask import Flask
-from .config import Config
+from .config import ProductionConfig
 from flask_socketio import SocketIO
 
 # If you have db:
@@ -9,7 +9,7 @@ from flask_socketio import SocketIO
 socketio = SocketIO()
 # login_manager = LoginManager()
 
-def create_app(config=Config):
+def create_app(config=ProductionConfig):
     # Init app
     app = Flask(__name__)
     app.config.from_object(config)
