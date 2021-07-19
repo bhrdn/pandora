@@ -107,7 +107,7 @@ def handle_process_event(datas):
             response_text = httpx.get(URL.replace('FUZZ', ' '.join(chrome.iloc[i].tolist())), cookies=COOKIES, timeout=8).text
             end_time = time.perf_counter() - start_time
 
-            emit('logger', f'Generation: {len(GENERATION)} - Chromosome: {i} --> KRE')
+            emit('logger', f'Generation: {len(GENERATION)} - Chromosome: {i + 1} --> Known Response Error')
             _kre = 0
             for kre in KNOWN_RESPONSE_ERROR:
                 if kre in response_text:
@@ -116,22 +116,19 @@ def handle_process_event(datas):
 
             score_error.append(_kre)
 
-            emit('logger', f'Generation: {len(GENERATION)} - Chromosome: {i} --> KRT')
-            _krt = 0
-            for krt in KNOWN_RESPONSE_TEXT:
-                if krt in response_text:
-                    _krt = APPROX_DELTA
+            emit('logger', f'Generation: {len(GENERATION)} - Chromosome: {i + 1} --> Known Response Query')
+            _krq = 0
+            for krq in KNOWN_RESPONSE_TEXT:
+                if krq in response_text:
+                    _krq = APPROX_DELTA
                     break
             
-            score_reflected.append(_krt)
+            score_reflected.append(_krq)
 
-            emit('logger', f'Generation: {len(GENERATION)} - Chromosome: {i} --> Blind')
-            if end_time >= TIMEOUT_SLEEP:
-                score_blind.append( APPROX_GAMMA )
-            else:
-                score_blind.append( ((NORMAL_TIMEOUT - end_time) / float(NORMAL_TIMEOUT)) * APPROX_GAMMA )
+            emit('logger', f'Generation: {len(GENERATION)} - Chromosome: {i + 1} --> Time Based')
+            score_blind.append( ((NORMAL_TIMEOUT - end_time) / float(NORMAL_TIMEOUT)) * APPROX_GAMMA )
 
-            emit('logger', f'Generation: {len(GENERATION)} - Chromosome: {i} --> Levenshtein distance')
+            emit('logger', f'Generation: {len(GENERATION)} - Chromosome: {i + 1} --> Levenshtein distance')
             if APPROX_BETA:
                 score_ld_response.append( (textdistance.levenshtein.distance(NORMAL_RESPONSE, response_text) / float(len(NORMAL_RESPONSE))) * APPROX_BETA )
             else:
