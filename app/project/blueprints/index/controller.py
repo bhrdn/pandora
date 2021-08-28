@@ -8,6 +8,7 @@ import httpx
 import time
 import textdistance
 import random
+import json
 
 bp_index = Blueprint('app_index', __name__, url_prefix='/')
 
@@ -30,6 +31,14 @@ def handle_process_event(datas):
     APPROX_GAMMA = datas['config']['approx'][2]
     APPROX_DELTA = datas['config']['approx'][3]
 
+    RAW_REQUEST = {
+        'method' : datas['target']['request']['method'],
+        'type' : datas['target']['request']['type'],
+        'body' : datas['target']['request']['body'],
+    }
+
+    RAW_REQUEST['body'] = '{}' if RAW_REQUEST['body'] == '' else RAW_REQUEST['body']
+
     def cookies_parser(raw):
         return dict(map(lambda x: x.split('='), map(lambda x: x.replace(' ', ''), raw.split(';'))))
 
@@ -38,8 +47,6 @@ def handle_process_event(datas):
         COOKIES = cookies_parser(datas['target']['cookies'])
     except:
         COOKIES = {}
-
-    COOKIES
 
     KNOWN_RESPONSE_ERROR = datas['config']['advance']['kre']
     KNOWN_RESPONSE_TEXT = datas['config']['advance']['krq']
@@ -75,7 +82,7 @@ def handle_process_event(datas):
         return result
 
     ## load public payload
-    datas = pd.read_csv('etc/payload.csv')
+    datas = pd.read_csv('/mnt/c/Users/bhrdn/Documents/Kuliah/TA/pandora/app/etc/payload.csv')
 
     ## remove nan values
     for attr in datas:
@@ -104,7 +111,16 @@ def handle_process_event(datas):
         emit('logger', f'Generation: {len(GENERATION)} --> Start')
         for i in range(len(chrome)):
             start_time = time.perf_counter()
-            response_text = httpx.get(URL.replace('FUZZ', ' '.join(chrome.iloc[i].tolist())), cookies=COOKIES, timeout=8).text
+            current_payload = ' '.join(chrome.iloc[i].tolist())
+
+            if RAW_REQUEST['method'] == 'GET':
+                response_text = httpx.get(URL.replace('FUZZ', current_payload), cookies=COOKIES, timeout=8).text
+            else:
+                try:
+                    response_text = httpx.post(URL.replace('FUZZ', current_payload), cookies=COOKIES, json=json.loads(RAW_REQUEST['body'].replace('FUZZ', current_payload))).text
+                except:
+                    response_text = httpx.post(URL.replace('FUZZ', current_payload), cookies=COOKIES, data=RAW_REQUEST['body'].replace('FUZZ', current_payload)).text
+    
             end_time = time.perf_counter() - start_time
 
             emit('logger', f'Generation: {len(GENERATION)} - Chromosome: {i + 1} --> Known Response Error')
@@ -135,9 +151,9 @@ def handle_process_event(datas):
                 score_ld_response.append( APPROX_BETA )
 
         chrome['score_error'] = score_error
-        chrome['score_reflected'] = score_reflected
-        chrome['score_blind'] = score_blind
         chrome['score_ld_response'] = score_ld_response
+        chrome['score_blind'] = score_blind
+        chrome['score_reflected'] = score_reflected
         chrome['score_total'] = [sum(chrome.iloc[i,-4:]) for i in range(len(chrome))]
 
         ## sort by higher score
@@ -153,7 +169,7 @@ def handle_process_event(datas):
             initial_population = []
             for i in range(0, GAP, 2):
                 TARGET_FU_CROSSOVER = random.choices(list(range(4)), [.2, .2, .5, .1]).pop()
-                TARGET_MUTATION = random.choices(['change_case_types', 'repeat_query', 'replace_whitespace']).pop()
+                TARGET_MUTATION = random.choices(['change_case_types', 'repeat_query', 'replace_whitespace'], [.5, .2, .3]).pop()
                 
                 prev = chrome.iloc[i,:4].tolist()
                 next = chrome.iloc[i + 1,:4].tolist()

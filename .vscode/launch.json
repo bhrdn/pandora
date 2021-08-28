@@ -10,7 +10,7 @@
 			"request": "launch",
 			"module": "flask",
 			"env": {
-				"FLASK_APP": "run.py",
+				"FLASK_APP": "/mnt/c/Users/bhrdn/Documents/Kuliah/TA/pandora/app/run.py",
 				"FLASK_ENV": "development"
 			},
 			"args": ["run", "--no-debugger"],

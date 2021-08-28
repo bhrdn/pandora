@@ -1,18 +1,44 @@
 <div class="row mt-4">
 	<h5>URL</h5>
-	<div class="input-group flex-nowrap">
-		<input
-			type="text"
-			class="form-control url"
-			placeholder="https://google.com/"
-			value="http://localhost/vulnerabilities/sqli/?id=FUZZ&Submit=Submit#"
-		/>
+
+	<div class="col-2">
+		<select class="form-control" id="request-method">
+			<option value="GET">GET</option>
+			<option value="POST">POST</option>
+			<option value="PUT">PUT</option>
+		</select>
+	</div>
+
+	<div class="col">
+		<div class="input-group flex-nowrap">
+			<input
+				type="text"
+				class="form-control url"
+				placeholder="https://google.com/"
+				value="http://localhost/vulnerabilities/sqli/?id=FUZZ&Submit=Submit#"
+			/>
+		</div>
 	</div>
 </div>
 
 <div class="row mt-4">
-	<h5>Cookies</h5>
 	<div class="col">
-		<textarea class="form-control cookies"></textarea>
+		<h5>Cookies</h5>
+		<div class="col">
+			<textarea class="form-control cookies" rows="5"></textarea>
+		</div>
+	</div>
+
+	<div class="col">
+		<h5>Raw Data</h5>
+
+		<select class="form-control" id="request-type">
+			<option value="json">application/json</option>
+			<option value="text">plain/text</option>
+		</select>
+		<br />
+		<div class="col">
+			<textarea class="form-control request-body"></textarea>
+		</div>
 	</div>
 </div>

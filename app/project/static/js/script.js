@@ -121,14 +121,15 @@ socket.on('result', (messages) => {
 	for (let i = 0; i < messages.length; i++) {
 		let raw_tables = `<tr><th scope="row">${i + 1}</th>`;
 		let test_case_result = [];
-		let test_case_index = [0, 1, 2, 3];
+		let test_case_index = 0;
 
 		for (data of messages[i]) {
-			if (i in test_case_index) {
+			if (test_case_index < 4) {
 				test_case_result.push(data);
 			}
 
 			raw_tables += `<td class="text-center">${data}</td>`;
+			test_case_index -= -1;
 		}
 
 		raw_tables += '<td class="text-center">';
@@ -155,8 +156,15 @@ socket.on('result', (messages) => {
 });
 socket.on('finished', () => buttonToggle());
 
-document.getElementById('advance_kre').append('error in your SQL syntax');
-document.getElementById('advance_krq').append('-MariaDB');
+document
+	.getElementById('advance_kre')
+	.append('You have an error in your SQL syntax');
+
+for (const krq of ['-MariaDB-\n', 'admin@juice-sh.op']) {
+	let advance_krq = document.getElementById('advance_krq');
+	advance_krq.append(krq);
+}
+advance_krq.style.height = '10%';
 
 document.addEventListener(
 	'click',
@@ -221,6 +229,11 @@ document.addEventListener(
 				target: {
 					url,
 					cookies,
+					request: {
+						method: document.getElementById('request-method').value,
+						type: document.getElementById('request-type').value,
+						body: document.getElementsByClassName('request-body')[0].value,
+					},
 				},
 				config: {
 					general,
