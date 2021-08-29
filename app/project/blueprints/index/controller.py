@@ -113,14 +113,17 @@ def handle_process_event(datas):
             start_time = time.perf_counter()
             current_payload = ' '.join(chrome.iloc[i].tolist())
 
-            if RAW_REQUEST['method'] == 'GET':
-                response_text = httpx.get(URL.replace('FUZZ', current_payload), cookies=COOKIES, timeout=8).text
-            else:
-                try:
-                    response_text = httpx.post(URL.replace('FUZZ', current_payload), cookies=COOKIES, json=json.loads(RAW_REQUEST['body'].replace('FUZZ', current_payload))).text
-                except:
-                    response_text = httpx.post(URL.replace('FUZZ', current_payload), cookies=COOKIES, data=RAW_REQUEST['body'].replace('FUZZ', current_payload)).text
-    
+            try:
+                if RAW_REQUEST['method'] == 'GET':
+                    response_text = httpx.get(URL.replace('FUZZ', current_payload), cookies=COOKIES).text
+                else:
+                    try:
+                        response_text = httpx.post(URL.replace('FUZZ', current_payload), cookies=COOKIES, json=json.loads(RAW_REQUEST['body'].replace('FUZZ', current_payload))).text
+                    except:
+                        response_text = httpx.post(URL.replace('FUZZ', current_payload), cookies=COOKIES, data=RAW_REQUEST['body'].replace('FUZZ', current_payload)).text
+            except:
+                response_text = '' ## timeout
+
             end_time = time.perf_counter() - start_time
 
             emit('logger', f'Generation: {len(GENERATION)} - Chromosome: {i + 1} --> Known Response Error')

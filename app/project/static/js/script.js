@@ -1,5 +1,7 @@
 let socket = io();
 
+window.URL = window.webkitURL || window.URL;
+
 socket.on('connect', () => {
 	let backend_status = document.getElementsByClassName('backend-status')[0];
 	backend_status.innerText = 'Backend Started';
@@ -46,6 +48,22 @@ const buttonToggle = () => {
 		!document.getElementsByClassName('btn-start')[0].disabled;
 };
 
+const processRow = (row) => {
+	var finalVal = '';
+	for (var j = 0; j < row.length; j++) {
+		var innerValue = row[j] === null ? '' : row[j].toString();
+		if (row[j] instanceof Date) {
+			innerValue = row[j].toLocaleString();
+		}
+		var result = innerValue.replace(/"/g, '""');
+		if (result.search(/("|,|\n)/g) >= 0) result = '"' + result + '"';
+		if (j > 0) finalVal += ',';
+		finalVal += result;
+	}
+
+	return finalVal;
+};
+
 // initial datas
 new ClipboardJS('.btn');
 let currentGeneration,
@@ -89,9 +107,9 @@ socket.on('logger', (messages) => {
 			role="tabpanel"
 			aria-labelledby="${currentState}-tab"
 		>
-			<button type="button" class="btn btn-primary btn-sm mt-4 pull-right">
+			<a type="button" class="btn btn-primary btn-sm mt-4 pull-right ${currentState}-download">
 				<i class="bi-download"></i> Download
-			</button>
+			</a>
 
 			<table class="table table-sm table-striped table-ellipsis mt-4">
 				<thead>
@@ -121,15 +139,10 @@ socket.on('result', (messages) => {
 	for (let i = 0; i < messages.length; i++) {
 		let raw_tables = `<tr><th scope="row">${i + 1}</th>`;
 		let test_case_result = [];
-		let test_case_index = 0;
 
 		for (data of messages[i]) {
-			if (test_case_index < 4) {
-				test_case_result.push(data);
-			}
-
 			raw_tables += `<td class="text-center">${data}</td>`;
-			test_case_index -= -1;
+			test_case_result.push(data);
 		}
 
 		raw_tables += '<td class="text-center">';
@@ -145,7 +158,7 @@ socket.on('result', (messages) => {
 		raw_tables += `
 		<td class="text-center">
 			<button type="button" class="btn btn-secondary btn-sm" data-clipboard-text="${encodeURI(
-				test_case_result.join(' ')
+				test_case_result.slice(0, 4).join(' ')
 			)}">
 				<i class="bi-clipboard"></i>
 			</button>
@@ -153,6 +166,37 @@ socket.on('result', (messages) => {
 
 		document.getElementById(`table-${currentState}`).innerHTML += raw_tables;
 	}
+
+	let header =
+		[
+			'fu_1',
+			'fu_2',
+			'fu_3',
+			'fu_4',
+			'score_alpha',
+			'score_beta',
+			'score_gamma',
+			'score_delte',
+			'total_score',
+		].join(',') + '\n';
+
+	let csv_files = new Blob(
+		[header.concat(messages.map((message) => processRow(message)).join('\n'))],
+		{
+			type: 'text/csv',
+		}
+	);
+
+	let download_btn = document.getElementsByClassName(
+		`${currentState}-download`
+	)[0];
+	download_btn.download = `result-${currentState}.csv`;
+	download_btn.href = window.URL.createObjectURL(csv_files);
+	download_btn.dataset.downloadurl = [
+		'text/csv',
+		download_btn.download,
+		download_btn.href,
+	].join(':');
 });
 socket.on('finished', () => buttonToggle());
 
